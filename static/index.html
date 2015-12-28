@@ -1,0 +1,66 @@
+<html>
+
+    <head>
+        <script type="text/javascript" src="http://code.jquery.com/jquery-2.1.4.js"></script>
+        <script type="text/javascript">
+            var username = "guest";
+            function createPacket(content) {
+                var p = { "username": username, "body": content };
+                return JSON.stringify(p);
+            }
+
+            function printHistory(t) {
+                var curr = $("#history").text();
+                $("#history").text(curr + t + "\r\n");
+            }
+
+
+            function connect() {
+                var connection=new WebSocket("ws://198.199.105.73:9000/chat/websocket");
+                username = $("#username").val();
+
+                var sendMessage = function() {
+                    m = $("#username").val();
+                    connection.send(createPacket(m));
+                    printHistory(username + ": " + m);
+                    $("#username").val("");
+                }
+
+                connection.onopen = function () {
+                  var p = createPacket("!authenticate");
+                  connection.send(p);
+                  printHistory("Successfully joined chat.");
+                  $("#connect").off('click');
+                  $("#connect").click(sendMessage);
+                  $("#connect").text("Send");
+                };
+                connection.onerror = function (error) {
+                    printHistory("An error occurred: " + error);
+                };
+                connection.onmessage = function (e) {
+                    var parsed = JSON.parse(e.data);
+                    printHistory(parsed['username'] + ": " + parsed['body']);
+                };
+            }
+        </script>
+    </head>
+
+    <body>
+        <p>
+            <input type='text' id='username' name='username'>
+            <button type='button' id="connect">Connect</button>
+        </p>
+        <p>
+            <textarea readonly style="min-height: 600px; min-width: 500px;" rows="4" cols="50" id='history' name='history'></textarea>
+        </p>
+    </body>
+
+    <script>
+        $("#connect").click(connect);
+        $("#username").keypress(function(e) {
+            if(e.which == 13) 
+                $("#connect").click();
+        });
+    </script>
+
+</html>
